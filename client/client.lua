@@ -27,6 +27,16 @@ if Config.General.K4MB1Prop then
 	}
 end
 
+
+--Functions
+local function getToolDamage(itemName, fallbackMin, fallbackMax)
+    local r = (Config.ToolDamage and Config.ToolDamage[itemName]) or nil
+    if r and r[1] and r[2] then
+        return math.random(r[1], r[2])
+    end
+    return math.random(fallbackMin or 2, fallbackMax or 3)
+end
+
 Mining.Functions.checkForJob = function()
 	if Config.General.requiredJob then
 		if hasJob(Config.General.requiredJob) then
@@ -68,51 +78,62 @@ Mining.Functions.spawnProp = function(coords, propName, adjustHeight)
 end
 
 Mining.Functions.setupMiningTarget = function(name, coords, prop, emptyProp, setReward, job)
-	Targets[name] = createCircleTarget({name, vec3(coords.x, coords.y, coords.z), 1.2, {name = name, debugPoly = debugMode, useZ = true}}, {
-		{	action = function()
-				Mining.MineOre.pickaxe({stone = prop, name = name, coords = coords, emptyProp = emptyProp, setReward = setReward})
-			end,
-			icon = "fas fa-hammer",
-			item = "pickaxe",
-			label = locale("info", "mine_ore")..
-					" ("..(Items["pickaxe"] and Items["pickaxe"].label or "pickaxe❌")..") "..
-					(Config.General.AltMining and Items[setReward].label or "")..
-					(debugMode and " ["..name.."]" or ""),
-			job = job,
-			canInteract = function()
-				return not isMining
-			end,
-		},
-		{	action = function()
-				Mining.MineOre.miningDrill({stone = prop, name = name, coords = coords, emptyProp = emptyProp, setReward = setReward})
-			end,
-			icon = "fas fa-screwdriver",
-			item = "miningdrill",
-			label = locale("info", "mine_ore")..
-					" ("..(Items["miningdrill"] and Items["miningdrill"].label or "miningdrill❌")..")"..
-					(Config.General.AltMining and Items[setReward].label or "")..
-					(debugMode and " ["..name.."]" or ""),
-			job = job,
-			canInteract = function()
-				return not isMining
-			end,
-		},
-		{	action = function()
-				Mining.MineOre.miningLaser({stone = prop, name = name, coords = coords, emptyProp = emptyProp, setReward = setReward})
-			end,
-			icon = "fas fa-screwdriver-wrench",
-			item = "mininglaser",
-			label = locale("info", "mine_ore")..
-					" ("..(Items["mininglaser"] and Items["mininglaser"].label or "mininglaser❌")..")"..
-					(Config.General.AltMining and Items[setReward].label or "")..
-					(debugMode and " ["..name.."]" or ""),
-			job = job,
-			canInteract = function()
-				return not isMining
-			end,
-		},
-	}, 1.7)
+    local toolTypes = {
+        pickaxe = {"pickaxe_1", "pickaxe_2", "pickaxe_3"},
+		drill = {"miningdrill","titaniumdrill","electricdrill","hydraulicdrill"},
+		laser = {"mininglaser","plasmalaser","quantumlaser"},
+		
+    }
+
+    local actions = {}
+
+    -- Helper to create an action for a tool
+    local function createToolAction(toolCategory, toolName, icon, func)
+        if not Items[toolName] then
+            print("^1Warning^7: Tool item '"..toolName.."' not found in Items table.")
+            return
+        end
+
+        table.insert(actions, {
+            action = function()
+                func({stone = prop, name = name, coords = coords, emptyProp = emptyProp, setReward = setReward, tool = toolName, })
+            end,
+            icon = icon,
+            item = toolName,
+            label = locale("info", "mine_ore") ..
+                    " ("..Items[toolName].label..")" ..
+                    (Config.General.AltMining and Items[setReward].label or "") ..
+                    (debugMode and " ["..name.."]" or ""),
+            job = job,
+            canInteract = function()
+                return not isMining
+            end,
+        })
+    end
+
+    -- Pickaxes
+    for _, pick in ipairs(toolTypes.pickaxe) do
+        createToolAction("pickaxe", pick, "fas fa-hammer", Mining.MineOre.pickaxe)
+    end
+
+    -- Drills
+    for _, drill in ipairs(toolTypes.drill) do
+        createToolAction("drill", drill, "fas fa-screwdriver", Mining.MineOre.miningDrill)
+    end
+
+    -- Lasers
+    for _, laser in ipairs(toolTypes.laser) do
+        createToolAction("laser", laser, "fas fa-screwdriver-wrench", Mining.MineOre.miningLaser)
+    end
+
+    -- Create the target with all tool actions
+    Targets[name] = createCircleTarget(
+        {name, vec3(coords.x, coords.y, coords.z), 1.2, {name = name, debugPoly = debugMode, useZ = true}},
+        actions,
+        1.7
+    )
 end
+
 
 Mining.Functions.makeJob = function()
 	Mining.Functions.removeJob()
@@ -435,11 +456,16 @@ Mining.MineOre.pickaxe = function(data)
 			Wait(350)
 		end
 	end)
-	if progressBar({label = locale("info", "drilling_ore"), time = GetTiming(Config.Timings["Pickaxe"]), cancel = true, icon = "pickaxe"}) then
+	local tool = data.tool or "pickaxe_1"
+	local timing = Config.Timings[tool] or Config.Timings.Mining
+
+
+	if progressBar({ label = locale("info", "drilling_ore"), time = GetTiming(timing), cancel = true, icon = tool }) then
 		TriggerServerEvent(getScript()..":Reward", { mine = true, cost = nil, setReward = data.setReward })
 		Mining.Other.stoneBreak(data.name, data.stone, data.coords, data.job, data.rot, data.emptyProp)
 		if Config.BreakTool and Config.BreakTool.Pickaxe then
-			breakTool({ item = "pickaxe", damage = math.random(2, 3) })
+			breakTool({ item = tool, damage = getToolDamage(tool, 2, 3) })
+
 		end
 	end
 	stopAnim(dict, anim)
@@ -476,14 +502,19 @@ Mining.MineOre.miningDrill = function(data)
 				Wait(600)
 			end
 		end)
-		if progressBar({label = locale("info", "drilling_ore"), time = GetTiming(Config.Timings["Mining"]), cancel = true, icon = "miningdrill"}) then
+		local tool = data.tool or "miningdrill_1"
+		local timing = Config.Timings[tool] or Config.Timings.Mining
+
+		if progressBar({ label = locale("info", "drilling_ore"), time = GetTiming(timing), cancel = true, icon = tool }) then
+
 			TriggerServerEvent(getScript()..":Reward", { mine = true, cost = nil, setReward = data.setReward })
 			Mining.Other.stoneBreak(data.name, data.stone, data.coords, data.job, data.rot, data.emptyProp)
 			if Config.BreakTool and Config.BreakTool.MiningDrill then
-				breakTool({ item = "miningdrill", damage = math.random(2, 3) })
+				breakTool({ item = tool, damage = getToolDamage(tool, 2, 3) })
+
 			end
 			if Config.BreakTool and Config.BreakTool.DrillBit then
-				breakTool({ item = "drillbit", damage = math.random(2, 3) })
+				breakTool({ item = "drillbit", damage = getToolDamage("drillbit", 1, 1) })
 			else
 				--Destroy drill bit chances
 				local chance = math.random(1, 100)
@@ -538,11 +569,15 @@ Mining.MineOre.miningLaser = function(data)
 			Wait(60)
 		end
 	end)
-	if progressBar({label = locale("info", "drilling_ore"), time = GetTiming(Config.Timings["Laser"]), cancel = true, icon = "mininglaser"}) then
+	local tool = data.tool or "mininglaser"
+	local timing = Config.Timings[tool] or Config.Timings.Laser
+	if progressBar({ label = locale("info", "drilling_ore"), time = GetTiming(timing), cancel = true, icon = tool }) then
+
 		TriggerServerEvent(getScript()..":Reward", { mine = true, cost = nil, setReward = data.setReward })
 		Mining.Other.stoneBreak(data.name, data.stone, data.coords, data.job, data.rot, data.emptyProp)
 		if Config.BreakTool and Config.BreakTool.MiningLaser then
-			breakTool({ item = "mininglaser", damage = math.random(2, 3) })
+			breakTool({ item = tool, damage = getToolDamage(tool, 2, 3) })
+
 		end
 	end
 	IsDrilling, isMining = false, false

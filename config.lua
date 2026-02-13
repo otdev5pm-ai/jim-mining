@@ -4,9 +4,9 @@ Config = {
 		Debug = false, -- enable debug mode
 
 		Menu = "ox",			-- "qb", "ox", "gta"
-		ProgressBar = "gta",	-- "qb", "ox", "gta"
-		Notify = "gta",			-- "qb", "ox", "gta"
-		drawText = "gta"			-- "qb", "ox", "gta"
+		ProgressBar = "ox",	-- "qb", "ox", "gta"
+		Notify = "ox",			-- "qb", "ox", "gta"
+		drawText = "ox",			-- "qb", "ox", "gta"
 
 	},
 	General = {
@@ -33,19 +33,40 @@ Config = {
 		MultiCraft = true,		-- Enable multicraft
 	},
 
-	BreakTool = {				-- BreakTool lowers the durability by default of a math.random(2, 3)
-		Pickaxe = true,
-		MiningDrill = false,
-		DrillBit = false,
-		MiningLaser = false,
-		GoldPan = false,
-	},
+	ToolDamage = {
+		pickaxe_1 = {2, 3},
+		pickaxe_2 = {1, 2},
+		pickaxe_3 = {1, 1},
+	  
+		-- Drills (أسماء جديدة)
+		miningdrill     = {2, 3},
+		titaniumdrill   = {1, 2},
+		electricdrill   = {1, 1},
+		hydraulicdrill  = {1, 1}, -- أو {1,2} حسب توازن
+	  
+		-- Lasers
+		mininglaser = {3,4},
+		plasmalaser = {2,3},
+		quantumlaser = {1,2},
+	  
+		drillbit = {1, 1},
+	  },
 
 	Timings = { -- Time it takes to do things
 		Cracking = { 15000, 25000 }, -- 15 - 25 seconds
 		Washing = { 15000, 25000 }, -- 15 - 25 seconds
 		Panning = { 45000, 50000 },-- 45 - 50 seconds
-		Pickaxe = { 30000, 45000 }, --  30 - 45 seconds
+        pickaxe_1 = {60000, 90000},  -- basic pickaxe: 30-45 sec
+        pickaxe_2 = {25000, 40000},  -- better pickaxe: 25-40 sec
+        pickaxe_3 = {10000, 12000},  -- advanced pickaxe: 20-35 sec
+		miningdrill = {25000, 30000}, -- basic drill: 45-50 sec
+        titaniumdrill = {20000, 28000}, -- better drill: 40-48 sec
+        electricdrill = {15000, 19000}, -- advanced drill: 35-45 sec
+		hydraulicdrill = {9000, 14000}, -- advanced drill: 35-45 sec
+        mininglaser = {7000, 10000},   -- basic laser: 7-10 sec
+        plasmalaser = {5000, 9000},    -- better laser: 5-9 sec
+        quantumlaser = {3000, 7000},    -- advanced laser: 4-8 sec
+
 		Mining = { 45000, 50000 }, -- 45 - 50 seconds
 		Laser = { 7000, 10000 },
 		OreRespawn = math.random(55000, 75000),
@@ -107,23 +128,34 @@ Config = {
 		{ name = "uncut_sapphire", rarity = "ultra_rare", prop = "k4mb1_crystalblue" },
 		{ name = "stone", rarity = "common", prop = "cs_x_rubweec" },
 	},
-
-------------------------------------------------------------
---Mining Store Items
+	BreakTool = {
+		Pickaxe = true,
+		MiningDrill = true,
+		DrillBit = true,
+		MiningLaser = true,
+		GoldPan = true,
+	  },
+	  
 	Items = {
-		label = "Mining Store",  slots = 9,
+		label = "Mining Store", slots = 12,
 		items = {
-			{ name = "water_bottle", price = 2, amount = 100, info = {}, type = "item", slot = 1, },
-			{ name = "sandwich", price = 2, amount = 250, info = {}, type = "item", slot = 2, },
-			{ name = "bandage", price = 25, amount = 100, info = {}, type = "item", slot = 3, },
-			{ name = "weapon_flashlight", price = 75, amount = 100, info = {}, type = "item", slot = 4, },
-			{ name = "goldpan", price = 25, amount = 100, info = {}, type = "item", slot = 5, },
-			{ name = "pickaxe",	price = 100, amount = 100, info = {}, type = "item", slot = 6, },
-			{ name = "miningdrill",	price = 10000, amount = 50, info = {}, type = "item", slot = 7, },
-			{ name = "mininglaser",	price = 60000, amount = 5, info = {}, type = "item", slot = 8, },
-			{ name = "drillbit", price = 0, amount = 100, info = {}, type = "item", slot = 9, },
+			{ name="goldpan", price=25, amount=100, type="item", slot=1 },
+	
+			{ name="pickaxe_1", price=100, amount=100, type="item", slot=2 },
+			{ name="pickaxe_2", price=250, amount=100, type="item", slot=3 },
+			{ name="pickaxe_3", price=500, amount=100, type="item", slot=4 },
+	
+			{ name="miningdrill", price=10000, amount=50, type="item", slot=5 },
+			{ name="titaniumdrill", price=20000, amount=35, type="item", slot=6 },
+			{ name="electricdrill", price=35000, amount=20, type="item", slot=7 },
+			{ name="hydraulicdrill", price=45000, amount=20, type="item", slot=8 },
+	
+			{ name="mininglaser", price=60000, amount=10, type="item", slot=9 },
+			{ name="drillbit", price=150, amount=100, type="item", slot=10 },
 		},
 	},
+	
+----------------------------------------------------------
 }
 
 -- Function for locales
